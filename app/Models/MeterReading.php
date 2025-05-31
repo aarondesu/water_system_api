@@ -12,6 +12,22 @@ class MeterReading extends Model
         'reading',
         'note',
     ];
+    protected $hidden = [
+        'updated_at',
+    ];
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'created_at' => 'datetime:m-d-Y',
+            'updated_at' => 'datetime:m-d-Y',
+        ];
+    }
 
     public function meter(): BelongsTo
     {

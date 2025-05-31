@@ -12,6 +12,12 @@ class Meter extends Model
         'number',
         'note',
         'subscriber_id',
+        'status',
+    ];
+
+    protected $hidden = [
+        'created_at',
+        'updated_at',
     ];
 
     public function readings(): HasMany
@@ -22,5 +28,10 @@ class Meter extends Model
     public function subscriber(): BelongsTo
     {
         return $this->belongsTo(Subscriber::class, 'subscriber_id', 'id');
+    }
+
+    public function latest_reading(): MeterReading
+    {
+        return $this->readings()->latest()->first();
     }
 }
