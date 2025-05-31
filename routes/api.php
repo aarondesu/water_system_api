@@ -39,6 +39,7 @@ Route::group(['prefix' => 'v1'], function () {
     Route::apiResource('meters', MeterController::class);
     Route::group(['prefix' => 'meters'], function () {
         Route::put('/assign/{id}/{subscriber}', [MeterController::class, 'assign']);
+        Route::put('/clear/{id}', [MeterController::class, 'clear']);
     });
 
     // MeterReadings

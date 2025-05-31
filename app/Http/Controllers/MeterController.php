@@ -63,15 +63,35 @@ class MeterController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        $meter = Meter::find($id);
-        if ($meter) {
-            $meter->number = $request->number;
-            $meter->note   = $request->note;
-            $meter->save();
+        try {
+            $validator = Validator::make($request->all(), [
+                'number' => 'required|unique:meters,number,' . $id,
+            ]);
 
-            return response()->json(['success' => true]);
-        } else {
-            return response()->json(['success' => false, 'errors' => ['Meter not found']], 404);
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'errors' => $validator->errors()]);
+            }
+
+            $meter = Meter::find($id);
+            if ($meter) {
+                $meter->subscriber_id = $request->subscriber_id;
+                $meter->number        = $request->number;
+                $meter->note          = $request->note;
+                $meter->save();
+
+                return response()->json(['success' => true]);
+            } else {
+                return response()->json(['success' => false, 'errors' => ['Meter not found']], 404);
+            }
+        } catch (QueryException $queryException) {
+            if ($queryException->getCode() === "23000") {
+                return response()->json(['success' => false, 'errors' => ['Subscriber is already assigned to another meter']], 400);
+            } else {
+                return response()->json(['success' => false, 'errors' => [
+                    'message' => 'Unhandled Query Error',
+                    'code'    => $queryException->getCode()]],
+                    500);
+            }
         }
     }
 
@@ -120,6 +140,22 @@ class MeterController extends Controller
                     'code'    => $queryException->getCode()]],
                     500);
             }
+        }
+    }
+
+    /**
+     * Clears the assigned subscriber from the meter
+     */
+    public function clear($id)
+    {
+        $meter = Meter::find($id);
+        if ($meter) {
+            $meter->subscriber_id = null;
+            $meter->save();
+
+            return response()->json(['success' => true]);
+        } else {
+            return response()->json(['success' => false, 'errors' => ['Meter Not found']], 404);
         }
     }
 }
