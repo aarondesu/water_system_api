@@ -33,10 +33,10 @@ class MeterController extends Controller
                 return response()->json(['success' => false, 'errors' => $validator->errors()], 400);
             }
 
-            $meter                = new Meter();
+            $meter = new Meter();
             $meter->subscriber_id = $request->subscriber_id;
-            $meter->number        = $request->number;
-            $meter->note          = $request->note;
+            $meter->number = $request->number;
+            $meter->note = $request->note;
             $meter->save();
 
             return response()->json(['success' => true]);
@@ -75,8 +75,8 @@ class MeterController extends Controller
             $meter = Meter::find($id);
             if ($meter) {
                 $meter->subscriber_id = $request->subscriber_id;
-                $meter->number        = $request->number;
-                $meter->note          = $request->note;
+                $meter->number = $request->number;
+                $meter->note = $request->note;
                 $meter->save();
 
                 return response()->json(['success' => true]);
@@ -84,13 +84,19 @@ class MeterController extends Controller
                 return response()->json(['success' => false, 'errors' => ['Meter not found']], 404);
             }
         } catch (QueryException $queryException) {
-            if ($queryException->getCode() === "23000") {
+            if ($queryException->getCode() === "23000" || $queryException->getCode() === "23505") {
                 return response()->json(['success' => false, 'errors' => ['Subscriber is already assigned to another meter']], 400);
             } else {
-                return response()->json(['success' => false, 'errors' => [
-                    'message' => 'Unhandled Query Error',
-                    'code'    => $queryException->getCode()]],
-                    500);
+                return response()->json(
+                    [
+                        'success' => false,
+                        'errors' => [
+                            'message' => 'Unhandled Query Error',
+                            'code' => $queryException->getCode()
+                        ]
+                    ],
+                    500
+                );
             }
         }
     }
@@ -116,14 +122,14 @@ class MeterController extends Controller
     {
 
         try {
-            $meter      = Meter::find($id);
+            $meter = Meter::find($id);
             $subscriber = Subscriber::find($subscriber);
 
-            if (! $meter) {
+            if (!$meter) {
                 return response()->json(['success' => false, 'errors' => ['Meter not found']]);
             }
 
-            if (! $subscriber) {
+            if (!$subscriber) {
                 return response()->json(['success' => false, 'errors' => ['Subscriber not found']]);
             }
 
@@ -132,13 +138,19 @@ class MeterController extends Controller
 
             return response()->json(['success' => true]);
         } catch (QueryException $queryException) {
-            if ($queryException->getCode() === "23000") {
+            if ($queryException->getCode() === "23000" || $queryException->getCode() === "23505") {
                 return response()->json(['success' => false, 'errors' => ['Subscriber is already assigned to another meter']], 400);
             } else {
-                return response()->json(['success' => false, 'errors' => [
-                    'message' => 'Unhandled Query Error',
-                    'code'    => $queryException->getCode()]],
-                    500);
+                return response()->json(
+                    [
+                        'success' => false,
+                        'errors' => [
+                            'message' => 'Unhandled Query Error',
+                            'code' => $queryException->getCode()
+                        ]
+                    ],
+                    500
+                );
             }
         }
     }
