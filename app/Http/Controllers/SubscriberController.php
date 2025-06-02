@@ -93,10 +93,12 @@ class SubscriberController extends Controller
             $subscriber = Subscriber::find($id);
 
             if ($subscriber) {
-                // Unassign Meter from
-                $meter                = $subscriber->meter()->first() ?: new Meter();
-                $meter->subscriber_id = null;
-                $meter->save();
+                // Unassign subscriber from meter, if no meter is found ignore
+                $meter = Meter::where('subscriber_id', '=', $id)->first();
+                if ($meter && $meter->exists()) {
+                    $meter->subscriber_id = null;
+                    $meter->save();
+                }
 
                 $subscriber->delete();
 
