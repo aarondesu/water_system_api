@@ -13,7 +13,7 @@ class MeterReadingController extends Controller
      */
     public function index()
     {
-        $readings = MeterReading::with('meter')->get();
+        $readings = MeterReading::with('meter.subscriber')->get();
         return response()->json(['success' => true, 'data' => $readings]);
     }
 
