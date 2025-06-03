@@ -23,15 +23,20 @@ class MeterReadingController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'meter_id' => 'required',
-            'reading'  => 'required',
+            'meter_id'   => 'required',
+            'reading'    => 'required',
+            'start_date' => 'required|date',
+            'end_date'   => 'required|date',
+
         ]);
 
         try {
-            $reading           = new MeterReading();
-            $reading->meter_id = $request->meter_id;
-            $reading->reading  = $request->reading;
-            $reading->note     = $request->note;
+            $reading             = new MeterReading();
+            $reading->meter_id   = $request->meter_id;
+            $reading->reading    = $request->reading;
+            $reading->start_date = $request->start_date;
+            $reading->end_date   = $request->end_date;
+            $reading->note       = $request->note;
 
             $reading->save();
 
@@ -63,8 +68,11 @@ class MeterReadingController extends Controller
     {
         $reading = MeterReading::find($id);
         if ($reading) {
-            $reading->reading = $request->reading;
-            $reading->note    = $request->note;
+            $reading->reading    = $request->reading;
+            $reading->start_date = $request->start_date;
+            $reading->end_date   = $request->end_date;
+            $reading->note       = $request->note;
+
             $reading->save();
 
             return response()->json(['success' => true]);
