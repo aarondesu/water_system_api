@@ -22,4 +22,5 @@ class Subscriber extends Model
     {
         return $this->hasOne(Meter::class, 'subscriber_id', 'id');
     }
+
 }
