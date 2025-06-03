@@ -33,10 +33,10 @@ class MeterController extends Controller
                 return response()->json(['success' => false, 'errors' => $validator->errors()], 400);
             }
 
-            $meter = new Meter();
+            $meter                = new Meter();
             $meter->subscriber_id = $request->subscriber_id;
-            $meter->number = $request->number;
-            $meter->note = $request->note;
+            $meter->number        = $request->number;
+            $meter->note          = $request->note;
             $meter->save();
 
             return response()->json(['success' => true]);
@@ -50,7 +50,7 @@ class MeterController extends Controller
      */
     public function show(string $id)
     {
-        $meter = Meter::find($id);
+        $meter = Meter::with('readings')->find($id);
         if ($meter) {
             return response()->json(['success' => true, 'data' => $meter]);
         } else {
@@ -75,8 +75,8 @@ class MeterController extends Controller
             $meter = Meter::find($id);
             if ($meter) {
                 $meter->subscriber_id = $request->subscriber_id;
-                $meter->number = $request->number;
-                $meter->note = $request->note;
+                $meter->number        = $request->number;
+                $meter->note          = $request->note;
                 $meter->save();
 
                 return response()->json(['success' => true]);
@@ -90,10 +90,10 @@ class MeterController extends Controller
                 return response()->json(
                     [
                         'success' => false,
-                        'errors' => [
+                        'errors'  => [
                             'message' => 'Unhandled Query Error',
-                            'code' => $queryException->getCode()
-                        ]
+                            'code'    => $queryException->getCode(),
+                        ],
                     ],
                     500
                 );
@@ -122,14 +122,14 @@ class MeterController extends Controller
     {
 
         try {
-            $meter = Meter::find($id);
+            $meter      = Meter::find($id);
             $subscriber = Subscriber::find($subscriber);
 
-            if (!$meter) {
+            if (! $meter) {
                 return response()->json(['success' => false, 'errors' => ['Meter not found']]);
             }
 
-            if (!$subscriber) {
+            if (! $subscriber) {
                 return response()->json(['success' => false, 'errors' => ['Subscriber not found']]);
             }
 
@@ -144,10 +144,10 @@ class MeterController extends Controller
                 return response()->json(
                     [
                         'success' => false,
-                        'errors' => [
+                        'errors'  => [
                             'message' => 'Unhandled Query Error',
-                            'code' => $queryException->getCode()
-                        ]
+                            'code'    => $queryException->getCode(),
+                        ],
                     ],
                     500
                 );
