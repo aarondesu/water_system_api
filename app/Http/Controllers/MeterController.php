@@ -170,4 +170,19 @@ class MeterController extends Controller
             return response()->json(['success' => false, 'errors' => ['Meter Not found']], 404);
         }
     }
+
+    public function status($id, $status)
+    {
+        if ($status !== "active" && $status !== "inactive") {
+            return response()->json(['success' => false, 'errors' => ["Invalid status. Must be either 'active' or 'inactive'"]]);
+        }
+
+        $meter = Meter::find($id);
+        if ($meter) {
+            $meter->status = $status;
+            $meter->save();
+
+            return response()->json(['success' => true, 'status' => $meter->status]);
+        }
+    }
 }

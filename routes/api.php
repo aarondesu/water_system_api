@@ -40,6 +40,7 @@ Route::group(['prefix' => 'v1'], function () {
     Route::group(['prefix' => 'meters'], function () {
         Route::put('/assign/{id}/{subscriber}', [MeterController::class, 'assign']);
         Route::put('/clear/{id}', [MeterController::class, 'clear']);
+        Route::put('/{id}/status/{status}', [MeterController::class, 'status']);
     });
 
     // MeterReadings
