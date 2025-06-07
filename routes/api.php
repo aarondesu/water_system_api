@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthenticationController;
+use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MeterController;
 use App\Http\Controllers\MeterReadingController;
 use App\Http\Controllers\SubscriberController;
@@ -45,5 +46,9 @@ Route::group(['prefix' => 'v1'], function () {
     // MeterReadings
     Route::apiResource('readings', MeterReadingController::class);
     Route::group(['prefix' => 'readings'], function () {});
+
+    // Invoices
+    Route::apiResource('invoices', InvoiceController::class);
+    Route::group(['prefix' => 'invoices'], function () {});
 
 });
