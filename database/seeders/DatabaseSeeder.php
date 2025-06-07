@@ -1,6 +1,8 @@
 <?php
 namespace Database\Seeders;
 
+use App\Models\Meter;
+use App\Models\MeterReading;
 use App\Models\Subscriber;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -20,5 +22,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         Subscriber::factory(100)->create();
+        Meter::factory(100)->create();
+        MeterReading::factory(300)->create();
     }
 }

@@ -11,10 +11,19 @@ class MeterReadingController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $readings = MeterReading::with('meter.subscriber')->get();
-        return response()->json(['success' => true, 'data' => $readings]);
+        // $readings = MeterReading::with('meter.subscriber')->get();
+        // return response()->json(['success' => true, 'data' => $readings]);
+
+        $rows     = $request->get("rows");
+        $order    = $request->get('order') ?? 'desc';
+        $readings = MeterReading::with('meter.subscriber')->orderBy('id', $order)->paginate($rows);
+
+        return response()->json(['success' => true, 'data' => [
+            'items' => $readings->items(),
+            'pages' => $readings->lastPage(),
+        ]]);
     }
 
     /**

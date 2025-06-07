@@ -1,11 +1,14 @@
 <?php
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class MeterReading extends Model
 {
+    use HasFactory;
+
     //
     protected $fillable = [
         'meter_id',
@@ -24,8 +27,10 @@ class MeterReading extends Model
     protected function casts(): array
     {
         return [
-            'created_at' => 'datetime:m-d-Y',
-            'updated_at' => 'datetime:m-d-Y',
+            'created_at' => 'datetime:F d, Y',
+            'updated_at' => 'datetime:F d, Y',
+            'start_date' => 'datetime:F d, Y',
+            'end_date'   => 'datetime:F d, Y',
         ];
     }
 
