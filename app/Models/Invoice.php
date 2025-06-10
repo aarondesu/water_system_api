@@ -19,6 +19,15 @@ class Invoice extends Model
         'due_date',
     ];
 
+    protected $casts = [
+        'created_at' => 'datetime:F d, Y',
+        'due_date'   => 'datetime:F d, Y',
+    ];
+
+    protected $hidden = [
+        'updated_at',
+    ];
+
     public function subscriber(): BelongsTo
     {
         return $this->belongsTo(Subscriber::class);

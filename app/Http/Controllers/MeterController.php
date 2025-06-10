@@ -50,7 +50,9 @@ class MeterController extends Controller
      */
     public function show(string $id)
     {
-        $meter = Meter::with('readings')->find($id);
+        $meter = Meter::with(['readings' => function ($query) {
+            $query->orderBy('created_at', 'desc');
+        }])->find($id);
         if ($meter) {
             return response()->json(['success' => true, 'data' => $meter]);
         } else {

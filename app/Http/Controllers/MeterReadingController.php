@@ -13,12 +13,26 @@ class MeterReadingController extends Controller
      */
     public function index(Request $request)
     {
-        // $readings = MeterReading::with('meter.subscriber')->get();
-        // return response()->json(['success' => true, 'data' => $readings]);
+        // Search Params
+        $rows    = $request->get("rows", 10);
+        $order   = $request->get('order', 'desc');
+        $meter   = $request->get('meter');
+        $reading = $request->get('reading');
 
-        $rows     = $request->get("rows");
-        $order    = $request->get('order') ?? 'desc';
-        $readings = MeterReading::with('meter.subscriber')->orderBy('id', $order)->paginate($rows);
+        // Query
+        $readings = MeterReading::with(['meter'])
+            ->whereHas('meter', function ($query) use ($meter) {
+                // Check if meter has a parameter then do a query
+                $query->when($meter, function ($query) use ($meter) {
+                    $query->where('number', 'LIKE', '%' . $meter . '%');
+                });
+            })
+            ->when($reading, function ($query) use ($reading) {
+                // Filter reading based on search param
+                $query->where('reading', 'LIKE', '%' . $reading . '%');
+            })
+            ->orderBy('created_at', $order)
+            ->paginate($rows);
 
         return response()->json(['success' => true, 'data' => [
             'items' => $readings->items(),

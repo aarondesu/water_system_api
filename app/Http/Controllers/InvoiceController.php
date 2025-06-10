@@ -44,14 +44,21 @@ class InvoiceController extends Controller
                 return response()->json(['success' => false, 'errors' => $validator->errors()]);
             }
 
+            // Check if previous reading exists
             $previous_reading = MeterReading::find($request->previous_reading_id);
             if (! $previous_reading) {
                 return response()->json(['success' => false, 'errors' => ['Failed to get previous reading']]);
             }
 
+            // Check if current reading exists
             $current_reading = MeterReading::find($request->current_reading_id);
             if (! $current_reading) {
                 return response()->json(['success' => false, 'errors' => ['Failed to get current reading']]);
+            }
+
+            // Check if current reading is greater than previous reading
+            if ($current_reading->reading < $previous_reading->reading) {
+                return response()->json(['success' => false, 'errors' => ['Previous Reading is greater than the Current Reading']]);
             }
 
             $invoice                      = new Invoice();

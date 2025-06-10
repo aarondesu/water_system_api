@@ -15,9 +15,12 @@ class SubscriberController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $subscribers = Subscriber::all();
+        $order       = $request->get('order');
+        $subscribers = Subscriber::when($order, function ($query) use ($order) {
+            $query->orderBy('last_name', $order);
+        })->get()->all();
         return response()->json(['success' => true, 'data' => $subscribers]);
     }
 
@@ -54,7 +57,9 @@ class SubscriberController extends Controller
      */
     public function show(string $id)
     {
-        $subscriber = Subscriber::find($id);
+        $subscriber = Subscriber::with(['meter.readings' => function ($query) {
+            $query->orderBy('created_at', 'desc');
+        }])->find($id);
 
         if ($subscriber) {
             return response()->json(['success' => true, 'data' => $subscriber]);
@@ -121,4 +126,10 @@ class SubscriberController extends Controller
         }
     }
 
+    public function unassigned()
+    {
+        $subscribers = Subscriber::leftJoin('meters', 'subscribers.id', '=', 'meters.subscriber_id')
+            ->where('meters.subscriber_id', '=', '0')->get();
+        dd($subscribers);
+    }
 }

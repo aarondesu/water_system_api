@@ -30,15 +30,16 @@ Route::group(['prefix' => 'v1'], function () {
     });
 
     // Subscribers
-    Route::apiResource('subscribers', SubscriberController::class);
     Route::group(['prefix' => 'subscribers'], function () {
         Route::get('/meter/{id}', [SubscriberController::class, 'meter']);
+        Route::get('/unassigned', [SubscriberController::class, 'unassigned']);
     });
+    Route::apiResource('subscribers', SubscriberController::class);
 
     // Meters
     Route::apiResource('meters', MeterController::class);
     Route::group(['prefix' => 'meters'], function () {
-        Route::put('/assign/{id}/{subscriber}', [MeterController::class, 'assign']);
+        Route::put('/{id}/assign/{subscriber}', [MeterController::class, 'assign']);
         Route::put('/clear/{id}', [MeterController::class, 'clear']);
         Route::put('/{id}/status/{status}', [MeterController::class, 'status']);
     });
