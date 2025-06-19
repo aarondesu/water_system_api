@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthenticationController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MeterController;
 use App\Http\Controllers\MeterReadingController;
@@ -9,8 +10,17 @@ use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
+// Health
+Route::get('/health', function () {
+    return response()->json(['status' => 'ok']);
+});
+
 // V1
 Route::group(['prefix' => 'v1'], function () {
+
+    // Dashboard
+    Route::middleware('auth:sanctum')->get('/dashboard', [DashboardController::class, 'index']);
+
     // Authentication
     Route::group(['prefix' => 'auth'], function () {
         Route::post('/login', [AuthenticationController::class, 'login'])->middleware('guest.api');
