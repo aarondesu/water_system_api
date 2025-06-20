@@ -15,7 +15,7 @@ class MeterController extends Controller
      */
     public function index()
     {
-        $meters = Meter::all();
+        $meters = Meter::with('subscriber')->get();
         return response()->json(['success' => true, 'data' => $meters]);
     }
 
@@ -52,7 +52,9 @@ class MeterController extends Controller
     {
         $meter = Meter::with(['readings' => function ($query) {
             $query->orderBy('created_at', 'desc');
-        }])->find($id);
+        }])
+            ->with('subscriber')
+            ->find($id);
         if ($meter) {
             return response()->json(['success' => true, 'data' => $meter]);
         } else {

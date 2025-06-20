@@ -24,15 +24,15 @@ class MeterReading extends Model
      *
      * @return array<string, string>
      */
-    protected function casts(): array
-    {
-        return [
-            'created_at' => 'datetime:F d, Y',
-            'updated_at' => 'datetime:F d, Y',
-            'start_date' => 'datetime:F d, Y',
-            'end_date'   => 'datetime:F d, Y',
-        ];
-    }
+    // protected function casts(): array
+    // {
+    //     return [
+    //         'created_at' => 'datetime:F d, Y',
+    //         'updated_at' => 'datetime:F d, Y',
+    //         'start_date' => 'datetime:F d, Y',
+    //         'end_date'   => 'datetime:F d, Y',
+    //     ];
+    // }
 
     public function meter(): BelongsTo
     {

@@ -16,7 +16,9 @@ class InvoiceController extends Controller
     {
         $rows     = $request->get('rows') ?? 10;
         $order    = $request->get('order') ?? "asc";
-        $invoices = Invoice::with('subscriber')->paginate($rows);
+        $invoices = Invoice::with('subscriber')
+            ->orderByDesc('created_at')
+            ->paginate($rows);
 
         return response()->json(['success' => true, 'data' => [
             'items' => $invoices->items(),
@@ -33,7 +35,7 @@ class InvoiceController extends Controller
             $validator = Validator::make($request->all(), [
                 'subscriber_id'       => 'required|exists:subscribers,id',
                 'meter_id'            => 'required|exists:meters,id',
-                'previous_reading_id' => 'required|exists:meter_readings,id',
+                'previous_reading_id' => 'sometimes:exists:meter_readings,id',
                 'current_reading_id'  => 'required|exists:meter_readings,id',
                 'rate_per_unit'       => 'required',
                 'due_date'            => 'required',
@@ -41,13 +43,15 @@ class InvoiceController extends Controller
 
             // if validation fails, return with errors of validation
             if ($validator->fails()) {
-                return response()->json(['success' => false, 'errors' => $validator->errors()]);
+                return response()->json(['success' => false, 'errors' => $validator->errors()], 400);
             }
 
             // Check if previous reading exists
             $previous_reading = MeterReading::find($request->previous_reading_id);
-            if (! $previous_reading) {
-                return response()->json(['success' => false, 'errors' => ['Failed to get previous reading']]);
+            if ($request->previous_reading || $request->previous_reading === 0) {
+                if (! $previous_reading) {
+                    return response()->json(['success' => false, 'errors' => ['Failed to get previous reading']]);
+                }
             }
 
             // Check if current reading exists
@@ -57,18 +61,20 @@ class InvoiceController extends Controller
             }
 
             // Check if current reading is greater than previous reading
-            if ($current_reading->reading < $previous_reading->reading) {
-                return response()->json(['success' => false, 'errors' => ['Previous Reading is greater than the Current Reading']]);
+            if ($request->previous_reading || $request->previous_reading === 0) {
+                if ($current_reading->reading < $previous_reading->reading) {
+                    return response()->json(['success' => false, 'errors' => ['Previous Reading is greater than the Current Reading']]);
+                }
             }
 
             $invoice                      = new Invoice();
             $invoice->subscriber_id       = $request->subscriber_id;
             $invoice->meter_id            = $request->meter_id;
-            $invoice->previous_reading_id = $previous_reading->id;
+            $invoice->previous_reading_id = $previous_reading->id ?? null;
             $invoice->current_reading_id  = $current_reading->id;
-            $invoice->consumption         = $current_reading->reading - $previous_reading->reading;
+            $invoice->consumption         = $current_reading->reading - ($previous_reading->reading ?? 0);
             $invoice->rate_per_unit       = $request->rate_per_unit;
-            $invoice->amount_due          = ($current_reading->reading - $previous_reading->reading) * $request->rate_per_unit;
+            $invoice->amount_due          = ($current_reading->reading - ($previous_reading->reading ?? 0)) * $request->rate_per_unit;
             $invoice->status              = 'unpaid';
             $invoice->due_date            = $request->due_date;
             $invoice->save();

@@ -3,6 +3,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Subscriber extends Model
@@ -23,4 +24,8 @@ class Subscriber extends Model
         return $this->hasOne(Meter::class, 'subscriber_id', 'id');
     }
 
+    public function invoices(): HasMany
+    {
+        return $this->hasMany(Invoice::class, 'subscriber_id', 'id');
+    }
 }

@@ -19,7 +19,7 @@ class SubscriberController extends Controller
     {
         $order       = $request->get('order');
         $subscribers = Subscriber::when($order, function ($query) use ($order) {
-            $query->orderBy('last_name', $order);
+            $query->orderBy('last_name', $order)->with('meter');
         })->get()->all();
         return response()->json(['success' => true, 'data' => $subscribers]);
     }
@@ -59,7 +59,7 @@ class SubscriberController extends Controller
     {
         $subscriber = Subscriber::with(['meter.readings' => function ($query) {
             $query->orderBy('created_at', 'desc');
-        }])->find($id);
+        }])->with('invoices')->find($id);
 
         if ($subscriber) {
             return response()->json(['success' => true, 'data' => $subscriber]);
