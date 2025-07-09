@@ -15,7 +15,9 @@ class MeterController extends Controller
      */
     public function index()
     {
-        $meters = Meter::with('subscriber')->get();
+        $meters = Meter::with(['subscriber' => function ($query) {
+            $query->select('id', 'first_name', 'last_name');
+        }])->get();
         return response()->json(['success' => true, 'data' => $meters]);
     }
 

@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Meter;
 use App\Models\MeterReading;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
@@ -31,6 +32,9 @@ class MeterReadingController extends Controller
                 // Filter reading based on search param
                 $query->where('reading', 'LIKE', '%' . $reading . '%');
             })
+            ->with(['meter.subscriber' => function ($query) {
+                $query->select(['id', 'first_name', 'last_name']);
+            }])
             ->orderBy('created_at', $order)
             ->paginate($rows);
 
@@ -116,6 +120,92 @@ class MeterReadingController extends Controller
             return response()->json(['success' => true]);
         } else {
             return response()->json(['success' => false, 'errors' => ['Reading not found']], 404);
+        }
+    }
+
+    /**
+     * Get the latest readings per meter along with the assigned subscriber
+     * @return void
+     */
+    public function latestReadingsMeter()
+    {
+        try {
+            $meter_readings = Meter::with(['readings' => function ($query) {
+                $query->select(['id', 'meter_id', 'reading'])->orderByDesc('created_at')->limit(1);
+            }, 'subscriber'])->get();
+
+            return response()->json(['success' => true, 'data' => $meter_readings]);
+        } catch (QueryException $queryException) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors'  => [
+                        'message' => 'Unhandled Query Error',
+                        'code'    => $queryException->getCode(),
+                    ],
+                ],
+                500
+            );
+        }
+    }
+
+    public function latest()
+    {
+        try {
+            $readings = Meter::with([
+                'subscriber' => function ($query) {
+                    $query->select("id", "first_name", "last_name");
+                },
+                'readings'   => function ($query) {
+                    $query->orderByDesc('created_at')->latest('created_at')->limit(2);
+                }])->get();
+
+            return response()->json(['success' => true, 'data' => $readings]);
+
+        } catch (QueryException $queryException) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors'  => [
+                        'message' => 'Unhandled Query Error',
+                        'code'    => $queryException->getCode(),
+                    ],
+                ],
+                500
+            );
+        }
+    }
+
+    public function storeBulk(Request $request)
+    {
+        try {
+
+            $readings = $request->readings;
+
+            foreach ($readings as $r) {
+                $reading             = new MeterReading();
+                $reading->meter_id   = $r["meter_id"];
+                $reading->reading    = $r["reading"];
+                $reading->start_date = $r["start_date"];
+                $reading->end_date   = $r["end_date"];
+
+                $reading->save();
+            }
+
+            return response()->json(['success' => true]);
+
+        } catch (QueryException $queryException) {
+            return response()->json(
+                [
+                    'success' => false,
+                    'errors'  => [
+                        'message' => 'Unhandled Query Error',
+                        'stack'   => $queryException->getMessage(),
+                        'code'    => $queryException->getCode(),
+                    ],
+                ],
+                500
+            );
         }
     }
 }

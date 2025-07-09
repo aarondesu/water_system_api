@@ -23,6 +23,9 @@ class DatabaseSeeder extends Seeder
 
         Subscriber::factory(100)->create();
         Meter::factory(100)->create();
-        MeterReading::factory(300)->create();
+
+        $this->call([
+            MeterReading::class,
+        ]);
     }
 }

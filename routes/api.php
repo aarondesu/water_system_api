@@ -32,17 +32,19 @@ Route::group(['prefix' => 'v1'], function () {
 
     // Users
     Route::group(['prefix' => 'users'], function () {
+        Route::delete('/{id}', [UserController::class, 'delete']);
+
         Route::get('/', [UserController::class, 'index']);
         Route::post('/', [UserController::class, 'create']);
         Route::get('/{id}', [UserController::class, 'retrieve']);
         Route::put('/{id}', [UserController::class, 'update']);
-        Route::delete('/{id', [UserController::class, 'delete']);
     });
 
     // Subscribers
     Route::group(['prefix' => 'subscribers'], function () {
         Route::get('/meter/{id}', [SubscriberController::class, 'meter']);
         Route::get('/unassigned', [SubscriberController::class, 'unassigned']);
+        Route::delete('/', [SubscriberController::class, 'bulkDestroy']);
     });
     Route::apiResource('subscribers', SubscriberController::class);
 
@@ -55,8 +57,12 @@ Route::group(['prefix' => 'v1'], function () {
     });
 
     // MeterReadings
+    Route::group(['prefix' => 'readings'], function () {
+        Route::get("/latest", [MeterReadingController::class, 'latest']);
+        Route::get('/latest/meter', [MeterReadingController::class, 'latestReadingsMeter']);
+        Route::post('/bulk', [MeterReadingController::class, 'storeBulk']);
+    });
     Route::apiResource('readings', MeterReadingController::class);
-    Route::group(['prefix' => 'readings'], function () {});
 
     // Invoices
     Route::apiResource('invoices', InvoiceController::class);

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Meter;
 use App\Models\Subscriber;
 use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -113,6 +114,33 @@ class SubscriberController extends Controller
             }
         } catch (Exception $error) {
             return response()->json(['success' => false, 'error' => $error->getMessage()]);
+        }
+    }
+    public function bulkDestroy(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'ids'   => 'required|array',
+                'ids.*' => 'integer|exists:subscribers,id',
+            ],
+                [
+                    'ids.*.exists' => 'Subscriber does not exist',
+                ]);
+
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'errors' => $validator->errors()], 400);
+            }
+
+            Subscriber::whereIn('id', $request->ids)->delete();
+
+            return response()->json(['success' => true]);
+
+        } catch (QueryException $queryException) {
+            return response()->json(['success' => false, 'errors' => [
+                'code'     => $queryException->getCode(),
+                'message'  => $queryException->getMessage(),
+                'bindings' => $queryException->getBindings(),
+            ]], 500);
         }
     }
 

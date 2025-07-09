@@ -2,6 +2,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -48,8 +49,22 @@ class UserController extends Controller
     {
         return $this->notYetImplementedResponse();
     }
-    public function delete()
+    public function delete($id)
     {
-        return $this->notYetImplementedResponse();
+        try {
+            $user = User::find($id);
+            if (! $user && ! $user->exists()) {
+                return response()->json(['success' => false, 'errors' => ['User does not exist']]);
+            }
+
+            $user->delete();
+            return response()->json(['success' => true]);
+
+        } catch (QueryException $queryException) {
+            return response()->json(['success' => false, 'errors' => [
+                'code'    => $queryException->getCode(),
+                'message' => $queryException->getMessage(),
+            ]], 400);
+        }
     }
 }

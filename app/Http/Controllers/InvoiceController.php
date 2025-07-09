@@ -68,6 +68,7 @@ class InvoiceController extends Controller
             }
 
             $invoice                      = new Invoice();
+            $invoice->invoice_number      = $this->generateInvoiceNumber();
             $invoice->subscriber_id       = $request->subscriber_id;
             $invoice->meter_id            = $request->meter_id;
             $invoice->previous_reading_id = $previous_reading->id ?? null;
@@ -94,7 +95,7 @@ class InvoiceController extends Controller
      */
     public function show(string $id)
     {
-        $invoice = Invoice::find($id);
+        $invoice = Invoice::with("subscriber")->with('meter')->find($id);
 
         if ($invoice) {
             return response()->json(['success' => true, 'data' => $invoice]);
@@ -158,5 +159,21 @@ class InvoiceController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+
+    private function generateInvoiceNumber()
+    {
+        $number = "INV-" . mt_rand(0, 1000000);
+
+        if ($this->invoiceNumberExists($number)) {
+            $this->generateInvoiceNumber();
+        }
+
+        return $number;
+    }
+
+    private function invoiceNumberExists($number)
+    {
+        return Invoice::where('invoice_number')->exists();
     }
 }

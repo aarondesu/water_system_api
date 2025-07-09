@@ -19,6 +19,11 @@ class Subscriber extends Model
         'mobile_number',
     ];
 
+    protected $hidden = [
+        'created_at',
+        'updated_at',
+    ];
+
     public function meter(): HasOne
     {
         return $this->hasOne(Meter::class, 'subscriber_id', 'id');
@@ -27,5 +32,18 @@ class Subscriber extends Model
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class, 'subscriber_id', 'id');
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(Transaction::class, "subscriber_id", "id");
+    }
+
+    public function arrears()
+    {
+        $total_paid   = $this->transactions()->sum("amount_paid");
+        $total_amount = $this->invoices()->where('subscriber_id', '=', $this->subscriber_id)->sum('amount_due');
+
+        return max($total_amount - $total_paid, 0);
     }
 }
