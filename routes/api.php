@@ -60,12 +60,11 @@ Route::group(['prefix' => 'v1'], function () {
     Route::group(['prefix' => 'readings'], function () {
         Route::get("/latest", [MeterReadingController::class, 'latest']);
         Route::get('/latest/meter', [MeterReadingController::class, 'latestReadingsMeter']);
-        Route::post('/bulk', [MeterReadingController::class, 'storeBulk']);
+        Route::post('/bulk', [MeterReadingController::class, 'bulkStore']);
     });
     Route::apiResource('readings', MeterReadingController::class);
 
     // Invoices
-    Route::apiResource('invoices', InvoiceController::class);
     Route::group(['prefix' => 'invoices'], function () {});
-
+    Route::apiResource('invoices', InvoiceController::class);
 });

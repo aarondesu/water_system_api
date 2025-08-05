@@ -31,6 +31,19 @@ class InvoiceController extends Controller
      */
     public function store(Request $request)
     {
+        $type = $request->get("type");
+
+        if ($type === "bulk") {
+            return $this->bulkStore($request);
+        } else if (! $type || $type === "single") {
+            return $this->singleStore($request);
+        } else {
+            return response()->json(['success' => false, 'errors' => ["Unkown type $type"]], 404);
+        }
+    }
+
+    public function singleStore(Request $request)
+    {
         try {
             $validator = Validator::make($request->all(), [
                 'subscriber_id'       => 'required|exists:subscribers,id',
@@ -48,7 +61,7 @@ class InvoiceController extends Controller
 
             // Check if previous reading exists
             $previous_reading = MeterReading::find($request->previous_reading_id);
-            if ($request->previous_reading || $request->previous_reading === 0) {
+            if ($previous_reading && $previous_reading->reading === 0) {
                 if (! $previous_reading) {
                     return response()->json(['success' => false, 'errors' => ['Failed to get previous reading']]);
                 }
@@ -61,8 +74,8 @@ class InvoiceController extends Controller
             }
 
             // Check if current reading is greater than previous reading
-            if ($request->previous_reading || $request->previous_reading === 0) {
-                if ($current_reading->reading < $previous_reading->reading) {
+            if ($current_reading && $previous_reading) {
+                if ($current_reading->reading > $previous_reading->reading) {
                     return response()->json(['success' => false, 'errors' => ['Previous Reading is greater than the Current Reading']]);
                 }
             }
@@ -81,6 +94,75 @@ class InvoiceController extends Controller
             $invoice->save();
 
             return response()->json(['success' => true]);
+
+        } catch (QueryException $queryException) {
+            return response()->json(['success' => false, 'errors' => [
+                'code'    => $queryException->getCode(),
+                'message' => $queryException->getMessage(),
+            ]], 400);
+        }
+    }
+
+    public function bulkStore(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                "invoices" => "required",
+            ]);
+
+            if (! $validator->fails()) {
+                $invoices = $request->invoices;
+
+                foreach ($invoices as $i) {
+                    // $validator = Validator::make($i, [
+                    //     'subscriber_id'       => 'required|exists:subscribers,id',
+                    //     'meter_id'            => 'required|exists:meters,id',
+                    //     'previous_reading_id' => 'sometimes:exists:meter_readings,id',
+                    //     'current_reading_id'  => 'required|exists:meter_readings,id',
+                    //     'rate_per_unit'       => 'required',
+                    //     'due_date'            => 'required',
+                    // ]);
+
+                    // Check if previous reading exists
+                    $previous_reading = MeterReading::find($i["previous_reading_id"] ?? 0);
+                    if ($previous_reading && $previous_reading->reading === 0) {
+                        if (! $previous_reading) {
+                            return response()->json(['success' => false, 'errors' => ['Failed to get previous reading']], 400);
+                        }
+                    }
+
+                    // Check if current reading exists
+                    $current_reading = MeterReading::find($i["current_reading_id"]);
+                    if (! $current_reading) {
+                        return response()->json(['success' => false, 'errors' => ['Failed to get current reading']], 400);
+                    }
+
+                    // Check if current reading is greater than previous reading
+                    if ($previous_reading && $current_reading) {
+                        if ($current_reading->reading < $previous_reading->reading) {
+                            return response()->json(['success' => false, 'errors' => ['Previous Reading is greater than the Current Reading']], 400);
+                        }
+                    }
+
+                    $invoice                      = new Invoice();
+                    $invoice->invoice_number      = $this->generateInvoiceNumber();
+                    $invoice->subscriber_id       = $i["subscriber_id"];
+                    $invoice->meter_id            = $i["meter_id"];
+                    $invoice->previous_reading_id = $previous_reading->id ?? null;
+                    $invoice->current_reading_id  = $current_reading->id;
+                    $invoice->consumption         = $current_reading->reading - ($previous_reading ? $previous_reading->reading : 0);
+                    $invoice->rate_per_unit       = $i["rate_per_unit"];
+                    $invoice->amount_due          = $invoice->consumption * $i["rate_per_unit"];
+                    $invoice->status              = 'unpaid';
+                    $invoice->due_date            = $i["due_date"];
+                    $invoice->save();
+                }
+
+                return response()->json(['success' => true]);
+
+            } else {
+                return response()->json(['success' => false, 'errors' => $validator->errors()], 404);
+            }
 
         } catch (QueryException $queryException) {
             return response()->json(['success' => false, 'errors' => [

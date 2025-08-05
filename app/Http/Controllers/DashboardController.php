@@ -70,12 +70,16 @@ class DashboardController extends Controller
         "))
             ->select([
                 DB::raw("TO_CHAR(month_date, 'FMMonth') as month"),
-                DB::raw("SUM(consumption) as total_consumption"),
+                DB::raw("COALESCE(SUM(consumption), 0) as total_consumption"),
             ])
             ->whereYear('month_date', Carbon::now()->year)
             ->whereMonth('month_date', Carbon::now()->month)
             ->groupBy("month_date")
             ->first();
+        $current_total_reading = $current_total_reading ?: (object) [
+            'month'             => Carbon::now()->format('F'),
+            'total_consumption' => 0,
+        ];
 
         $previous_total_reading = DB::table(DB::raw("
                 (
@@ -95,6 +99,10 @@ class DashboardController extends Controller
             ->whereMonth('month_date', Carbon::now()->subMonth()->month)
             ->groupBy("month_date")
             ->first();
+        $previous_total_reading = $previous_total_reading ?: (object) [
+            'month'             => Carbon::now()->format('F'),
+            'total_consumption' => 0,
+        ];
 
         $latest_readings = MeterReading::select(['id', 'reading', 'created_at', 'meter_id'])->with(['meter' => function ($query) {
             $query->select(['id', 'number', 'subscriber_id']);
@@ -167,8 +175,8 @@ class DashboardController extends Controller
 
         if (! $previous_total_balance) {
             $previous_total_balance = (object) [
-                'month'             => Carbon::now()->subMonth()->format('F'),
-                'totatl_amount_due' => 0,
+                'month'            => Carbon::now()->subMonth()->format('F'),
+                'total_amount_due' => 0,
             ];
         }
 

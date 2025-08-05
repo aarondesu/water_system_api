@@ -176,7 +176,7 @@ class MeterReadingController extends Controller
         }
     }
 
-    public function storeBulk(Request $request)
+    public function bulkStore(Request $request)
     {
         try {
 
