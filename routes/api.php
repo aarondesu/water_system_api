@@ -65,6 +65,8 @@ Route::group(['prefix' => 'v1'], function () {
     Route::apiResource('readings', MeterReadingController::class);
 
     // Invoices
-    Route::group(['prefix' => 'invoices'], function () {});
+    Route::group(['prefix' => 'invoices'], function () {
+        Route::get("/arrears/{id}", [InvoiceController::class, 'arrears']);
+    });
     Route::apiResource('invoices', InvoiceController::class);
 });

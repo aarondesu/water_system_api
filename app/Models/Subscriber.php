@@ -39,6 +39,14 @@ class Subscriber extends Model
         return $this->hasMany(Transaction::class, "subscriber_id", "id");
     }
 
+    public function getArrearsAttribute()
+    {
+        $total_paid   = $this->transactions()->sum("amount_paid");
+        $total_amount = $this->invoices()->where('subscriber_id', '=', $this->id)->sum('amount_due');
+
+        return max($total_amount - $total_paid, 0);
+    }
+
     public function arrears()
     {
         $total_paid   = $this->transactions()->sum("amount_paid");

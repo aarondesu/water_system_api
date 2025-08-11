@@ -56,11 +56,23 @@ class SubscriberController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(Request $request, string $id)
     {
-        $subscriber = Subscriber::with(['meter.readings' => function ($query) {
-            $query->orderBy('created_at', 'desc');
-        }])->with('invoices')->find($id);
+        $populate = $request->get('populate');
+
+        if ($populate === "*") {
+            $subscriber = Subscriber::with(['meter.readings' => function ($query) {
+                $query->orderBy('created_at', 'desc');
+            }])
+                ->with('invoices')
+                ->find($id);
+        } else {
+            $subscriber = Subscriber::with(['meter.readings' => function ($query) {
+                $query->orderBy('created_at', 'desc');
+            }])
+                ->with('invoices')
+                ->find($id);
+        }
 
         if ($subscriber) {
             return response()->json(['success' => true, 'data' => $subscriber]);

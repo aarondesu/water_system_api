@@ -74,23 +74,24 @@ class InvoiceController extends Controller
             }
 
             // Check if current reading is greater than previous reading
-            if ($current_reading && $previous_reading) {
-                if ($current_reading->reading > $previous_reading->reading) {
-                    return response()->json(['success' => false, 'errors' => ['Previous Reading is greater than the Current Reading']]);
+            if ($previous_reading && $current_reading) {
+                if ($current_reading->reading < $previous_reading->reading) {
+                    return response()->json(['success' => false, 'errors' => ['Previous Reading is greater than the Current Reading']], 400);
                 }
             }
 
             $invoice                      = new Invoice();
-            $invoice->invoice_number      = $this->generateInvoiceNumber();
             $invoice->subscriber_id       = $request->subscriber_id;
             $invoice->meter_id            = $request->meter_id;
             $invoice->previous_reading_id = $previous_reading->id ?? null;
             $invoice->current_reading_id  = $current_reading->id;
-            $invoice->consumption         = $current_reading->reading - ($previous_reading->reading ?? 0);
+            $invoice->consumption         = $current_reading->reading - ($previous_reading ? $previous_reading->reading : 0);
             $invoice->rate_per_unit       = $request->rate_per_unit;
             $invoice->amount_due          = ($current_reading->reading - ($previous_reading->reading ?? 0)) * $request->rate_per_unit;
             $invoice->status              = 'unpaid';
             $invoice->due_date            = $request->due_date;
+            $invoice->save();
+            $invoice->invoice_number = $this->generateInvoiceNumber($request->subscriber_id, $request->meter_id, $invoice->id);
             $invoice->save();
 
             return response()->json(['success' => true]);
@@ -109,6 +110,8 @@ class InvoiceController extends Controller
             $validator = Validator::make($request->all(), [
                 "invoices" => "required",
             ]);
+
+            $data[] = [];
 
             if (! $validator->fails()) {
                 $invoices = $request->invoices;
@@ -145,7 +148,6 @@ class InvoiceController extends Controller
                     }
 
                     $invoice                      = new Invoice();
-                    $invoice->invoice_number      = $this->generateInvoiceNumber();
                     $invoice->subscriber_id       = $i["subscriber_id"];
                     $invoice->meter_id            = $i["meter_id"];
                     $invoice->previous_reading_id = $previous_reading->id ?? null;
@@ -156,6 +158,12 @@ class InvoiceController extends Controller
                     $invoice->status              = 'unpaid';
                     $invoice->due_date            = $i["due_date"];
                     $invoice->save();
+                    $invoice->invoice_number = $this->generateInvoiceNumber($i["subscriber_id"], $i["meter_id"], $invoice->id);
+                    $invoice->save();
+
+                    if (! $invoice) {
+                        break;
+                    }
                 }
 
                 return response()->json(['success' => true]);
@@ -175,9 +183,21 @@ class InvoiceController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(string $id, Request $request)
     {
-        $invoice = Invoice::with("subscriber")->with('meter')->find($id);
+        $populate = $request->get('populate');
+        if ($populate === "*") {
+            $invoice = Invoice::with('subscriber')->with('meter')->find($id)->append('arrears');
+        } else if ($populate === "subscriber") {
+            $invoice = Invoice::with('meter')->find($id);
+        } else if ($populate === "meter") {
+            $invoice = Invoice::with('meter')->find($id);
+        } else if ($populate === "all") {
+            $invoice = Invoice::find($id);
+        } else {
+            $invoice = Invoice::find($id);
+
+        }
 
         if ($invoice) {
             return response()->json(['success' => true, 'data' => $invoice]);
@@ -235,6 +255,23 @@ class InvoiceController extends Controller
         }
     }
 
+    public function arrears(string $id)
+    {
+        try {
+            $arrears = Invoice::with('transactions')
+                ->where('subscriber_id', $id)
+                ->where('status', '!=', 'paid')
+                ->get();
+
+            return response()->json(['success' => true, 'data' => $arrears]);
+        } catch (QueryException $queryException) {
+            return response()->json(['success' => false, 'errors' => [
+                'code'    => $queryException->getCode(),
+                'message' => $queryException->getMessage(),
+            ]], 400);
+        }
+    }
+
     /**
      * Remove the specified resource from storage.
      */
@@ -243,13 +280,13 @@ class InvoiceController extends Controller
         //
     }
 
-    private function generateInvoiceNumber()
+    private function generateInvoiceNumber(string $subscriber_id, string $meter_id, string $invoice_id)
     {
-        $number = "INV-" . mt_rand(0, 1000000);
+        $number = str_pad($subscriber_id, 4, "0", STR_PAD_LEFT) . str_pad($meter_id, 4, "0", STR_PAD_LEFT) . str_pad($invoice_id, 4, "0", STR_PAD_LEFT);
 
-        if ($this->invoiceNumberExists($number)) {
-            $this->generateInvoiceNumber();
-        }
+        // if ($this->invoiceNumberExists($number)) {
+        //     $number = $this->generateInvoiceNumber($subscriber_id, $meter_id, $invoice_id);
+        // }
 
         return $number;
     }

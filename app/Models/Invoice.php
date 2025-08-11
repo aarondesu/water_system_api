@@ -8,8 +8,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Invoice extends Model
 {
-    protected $appends = ["arrears"];
-
+    // protected $appends = ["arrears"];
     protected $fillable = [
         'subscriber_id',
         'meter_id',
@@ -49,10 +48,14 @@ class Invoice extends Model
     public function getArrearsAttribute()
     {
 
-        $total_paid   = $this->transactions()->sum("amount_paid");
-        $total_amount = $this->where('subscriber_id', '=', $this->subscriber_id)->sum('amount_due');
+        $arrears = Invoice::with('transactions')
+            ->whereDate('created_at', '<', $this->created_at)
+            ->where('subscriber_id', '=', $this->subscriber_id)
+            ->where('status', '!=', 'paid')
+            ->get();
 
-        return max($total_amount - $total_paid, 0);
+        // dd($arrears);
+        return $arrears;
     }
 
     public function previous_reading(): HasOne
