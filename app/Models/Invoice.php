@@ -54,7 +54,6 @@ class Invoice extends Model
             ->where('status', '!=', 'paid')
             ->get();
 
-        // dd($arrears);
         return $arrears;
     }
 

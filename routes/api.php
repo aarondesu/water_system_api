@@ -2,7 +2,10 @@
 
 use App\Http\Controllers\AuthenticationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\FormulaController;
+use App\Http\Controllers\FormulaVariableController;
 use App\Http\Controllers\InvoiceController;
+use App\Http\Controllers\MathTestController;
 use App\Http\Controllers\MeterController;
 use App\Http\Controllers\MeterReadingController;
 use App\Http\Controllers\SubscriberController;
@@ -69,4 +72,12 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get("/arrears/{id}", [InvoiceController::class, 'arrears']);
     });
     Route::apiResource('invoices', InvoiceController::class);
+
+    // Formulas
+    Route::apiResource('formulas', FormulaController::class);
+    // Formula Variables
+    Route::apiResource('variables', FormulaVariableController::class);
+
+    // Test
+    Route::get('/test/', [MathTestController::class, "test"]);
 });
