@@ -3,6 +3,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Formulas;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class FormulaController extends Controller
 {
@@ -11,7 +12,7 @@ class FormulaController extends Controller
      */
     public function index()
     {
-        $formulas = Formulas::with('variables')->get();
+        $formulas = Formulas::with('variables')->with('columns')->get();
 
         return response()->json(['success' => true, 'data' => $formulas]);
     }
@@ -21,7 +22,34 @@ class FormulaController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validator = Validator::make($request->all(), [
+            'name'                    => 'required',
+            'expression'              => 'required',
+            'description'             => 'sometimes',
+            'variables'               => 'required',
+            'variables.*.name'        => 'required',
+            'variables.*.value'       => 'required',
+            'variables.*.description' => 'sometimes',
+            'columns'                 => 'required',
+            'columns.*.header'        => 'required',
+            'columns.*.value'         => 'required',
+        ]);
+
+        if (! $validator->fails()) {
+
+            $formula              = new Formulas();
+            $formula->name        = $request->name;
+            $formula->expression  = $request->expression;
+            $formula->description = $request->description;
+            $formula->save();
+
+            $formula->variables()->createMany($request->variables);
+            $formula->columns()->createMany($request->columns);
+
+            return response()->json(['success' => true]);
+        } else {
+            return response()->json(['success' => false, 'errors' => $validator->errors()]);
+        }
     }
 
     /**
@@ -45,6 +73,9 @@ class FormulaController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        $formula = Formulas::find($id);
+        if ($formula) {
+            $formula->delete();
+        }
     }
 }

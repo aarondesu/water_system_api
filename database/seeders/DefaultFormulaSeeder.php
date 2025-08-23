@@ -29,5 +29,18 @@ class DefaultFormulaSeeder extends Seeder
                 'formula_id'  => 1,
             ],
         ]);
+
+        DB::table('formula_columns')->insert([
+            [
+                'formula_id' => 1,
+                'header'     => 'Consumption',
+                'value'      => 'consumption',
+            ],
+            [
+                'formula_id' => 1,
+                'header'     => 'Rate',
+                'value'      => 'rate',
+            ],
+        ]);
     }
 }

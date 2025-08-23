@@ -2,6 +2,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Formulas extends Model
 {
@@ -14,5 +15,10 @@ class Formulas extends Model
     public function variables()
     {
         return $this->hasMany(FormulaVariable::class, 'formula_variables.formula_id', 'id');
+    }
+
+    public function columns(): HasMany
+    {
+        return $this->hasMany(FormulaColumn::class, 'formula_columns.formula_id', 'id');
     }
 }

@@ -75,8 +75,6 @@ Route::group(['prefix' => 'v1'], function () {
 
     // Formulas
     Route::apiResource('formulas', FormulaController::class);
-    // Formula Variables
-    Route::apiResource('variables', FormulaVariableController::class);
 
     // Test
     Route::get('/test/', [MathTestController::class, "test"]);
