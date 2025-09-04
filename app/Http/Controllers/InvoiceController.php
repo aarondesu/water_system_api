@@ -1,11 +1,13 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\Formulas;
 use App\Models\Invoice;
 use App\Models\MeterReading;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Symfony\Component\ExpressionLanguage\ExpressionLanguage;
 
 class InvoiceController extends Controller
 {
@@ -17,6 +19,9 @@ class InvoiceController extends Controller
         $rows     = $request->get('rows') ?? 10;
         $order    = $request->get('order') ?? "asc";
         $invoices = Invoice::with('subscriber')
+            ->with('formula', function ($builder) {
+                return $builder->select(['id', 'name']);
+            })
             ->orderByDesc('created_at')
             ->paginate($rows);
 
@@ -50,7 +55,8 @@ class InvoiceController extends Controller
                 'meter_id'            => 'required|exists:meters,id',
                 'previous_reading_id' => 'sometimes:exists:meter_readings,id',
                 'current_reading_id'  => 'required|exists:meter_readings,id',
-                'rate_per_unit'       => 'required',
+                'rate_per_unit'       => 'sometimes',
+                'formula_id'          => 'required',
                 'due_date'            => 'required',
             ]);
 
@@ -80,14 +86,26 @@ class InvoiceController extends Controller
                 }
             }
 
+            $consumption = $current_reading->reading - ($previous_reading ? $previous_reading->reading : 0);
+
+            $formula = Formulas::with('variables')->find($request->formula_id);
+            if (! $formula) {
+                return response()->json(['success' => false, 'errors' => ['Formula does not exist!']]);
+            }
+
+            $variables                = $formula->variables->pluck('value', 'name')->toArray();
+            $variables["consumption"] = $consumption;
+            $language                 = new ExpressionLanguage();
+            $amount_due               = $language->evaluate($formula->expression, $variables);
+
             $invoice                      = new Invoice();
             $invoice->subscriber_id       = $request->subscriber_id;
             $invoice->meter_id            = $request->meter_id;
             $invoice->previous_reading_id = $previous_reading->id ?? null;
             $invoice->current_reading_id  = $current_reading->id;
-            $invoice->consumption         = $current_reading->reading - ($previous_reading ? $previous_reading->reading : 0);
-            $invoice->rate_per_unit       = $request->rate_per_unit;
-            $invoice->amount_due          = ($current_reading->reading - ($previous_reading->reading ?? 0)) * $request->rate_per_unit;
+            $invoice->consumption         = $consumption;
+            $invoice->formula_id          = $request->formula_id;
+            $invoice->amount_due          = $amount_due;
             $invoice->status              = 'unpaid';
             $invoice->due_date            = $request->due_date;
             $invoice->save();
@@ -185,19 +203,12 @@ class InvoiceController extends Controller
      */
     public function show(string $id, Request $request)
     {
-        $populate = $request->get('populate');
-        if ($populate === "*") {
-            $invoice = Invoice::with('subscriber')->with('meter')->find($id)->append('arrears');
-        } else if ($populate === "subscriber") {
-            $invoice = Invoice::with('meter')->find($id);
-        } else if ($populate === "meter") {
-            $invoice = Invoice::with('meter')->find($id);
-        } else if ($populate === "all") {
-            $invoice = Invoice::find($id);
-        } else {
-            $invoice = Invoice::find($id);
-
-        }
+        $invoice = Invoice::with('subscriber')->with('meter')->with('formula', function ($query) {
+            return $query->with('variables')->with('columns');
+        })
+            ->with('previous_reading')
+            ->with('current_reading')
+            ->find($id)->append('arrears');
 
         if ($invoice) {
             return response()->json(['success' => true, 'data' => $invoice]);
