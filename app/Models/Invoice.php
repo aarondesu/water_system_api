@@ -30,6 +30,11 @@ class Invoice extends Model
         'updated_at',
     ];
 
+    public function formula()
+    {
+        return $this->belongsTo(Formulas::class, 'formula_id', 'id');
+    }
+
     public function subscriber(): BelongsTo
     {
         return $this->belongsTo(Subscriber::class);
