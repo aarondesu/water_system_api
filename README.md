@@ -1,6 +1,6 @@
 # Water Billing System Frontend
 
-This project is a rewrite of a water billing system I've created over a year ago. This is the backend part of the project. Still in WIP. Features are subjected to change.
+This project is a rewrite of a water billing system I've created over a year ago. Uses MathJs in then frontend to evaluate the formula, and Symphony/ExpressionLanguage in the . This is the frontend part of the project. Still in WIP. Features are subject to change.
 
 ## Getting Started
 
