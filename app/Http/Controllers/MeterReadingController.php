@@ -129,24 +129,11 @@ class MeterReadingController extends Controller
      */
     public function latestReadingsMeter()
     {
-        try {
-            $meter_readings = Meter::with(['readings' => function ($query) {
-                $query->select(['id', 'meter_id', 'reading'])->orderByDesc('created_at')->limit(1);
-            }, 'subscriber'])->get();
+        $meter_readings = Meter::with(['readings' => function ($query) {
+            $query->select(['id', 'meter_id', 'reading'])->orderByDesc('created_at')->limit(1);
+        }, 'subscriber'])->get();
 
-            return response()->json(['success' => true, 'data' => $meter_readings]);
-        } catch (QueryException $queryException) {
-            return response()->json(
-                [
-                    'success' => false,
-                    'errors'  => [
-                        'message' => 'Unhandled Query Error',
-                        'code'    => $queryException->getCode(),
-                    ],
-                ],
-                500
-            );
-        }
+        return response()->json(['success' => true, 'data' => $meter_readings]);
     }
 
     public function latest()
