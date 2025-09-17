@@ -3,7 +3,6 @@
 use App\Http\Controllers\AuthenticationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\FormulaController;
-use App\Http\Controllers\FormulaVariableController;
 use App\Http\Controllers\InvoiceController;
 use App\Http\Controllers\MathTestController;
 use App\Http\Controllers\MeterController;
@@ -74,7 +73,10 @@ Route::group(['prefix' => 'v1'], function () {
     Route::apiResource('invoices', InvoiceController::class);
 
     // Formulas
-    Route::apiResource('formulas', FormulaController::class);
+    Route::group(['prefix' => 'formulas'], function () {
+        Route::delete('/', [FormulaController::class, 'bulkDestroy']);
+    });
+    Route::apiResource('/formulas', FormulaController::class);
 
     // Test
     Route::get('/test/', [MathTestController::class, "test"]);
