@@ -204,7 +204,9 @@ class InvoiceController extends Controller
     public function show(string $id, Request $request)
     {
         $invoice = Invoice::with('subscriber')->with('meter')->with('formula', function ($query) {
-            return $query->with('variables')->with('columns');
+            return $query->with('variables')->with('columns', function ($query) {
+                $query->orderBy('order', 'asc');
+            });
         })
             ->with('previous_reading')
             ->with('current_reading')
@@ -222,48 +224,40 @@ class InvoiceController extends Controller
      */
     public function update(Request $request, string $id)
     {
-        try {
-            $invoice = Invoice::find($id);
-            if (! $invoice) {
-                return response()->json(['success' => false, 'erros' => ['Invoice does not exist']]);
-            }
-
-            $validator = Validator::make($request->all(), [
-                'previous_reading_id' => 'required|exists:meter_readings,id',
-                'current_reading_id'  => 'required|exists:meter_readings,id',
-                'rate_per_unit'       => 'required',
-                'due_date'            => 'required',
-            ]);
-
-            // if validation fails, return with errors of validation
-            if ($validator->fails()) {
-                return response()->json(['success' => false, 'errors' => $validator->errors()]);
-            }
-
-            $previous_reading = MeterReading::find($request->previous_reading_id);
-            if (! $previous_reading) {
-                return response()->json(['success' => false, 'errors' => ['Failed to get previous reading']]);
-            }
-
-            $current_reading = MeterReading::find($request->current_reading_id);
-            if (! $current_reading) {
-                return response()->json(['success' => false, 'errors' => ['Failed to get current reading']]);
-            }
-
-            $invoice->previous_reading_id = $previous_reading->id;
-            $invoice->current_reading_id  = $current_reading->id;
-            $invoice->consumption         = $current_reading->reading - $previous_reading->reading;
-            $invoice->rate_per_unit       = $request->rate_per_unit;
-            $invoice->amount_due          = ($current_reading->reading - $previous_reading->reading) * $request->rate_per_unit;
-            $invoice->due_date            = $request->due_date;
-            $invoice->save();
-
-        } catch (QueryException $queryException) {
-            return response()->json(['success' => false, 'errors' => [
-                'code'    => $queryException->getCode(),
-                'message' => $queryException->getMessage(),
-            ]], 400);
+        $invoice = Invoice::find($id);
+        if (! $invoice) {
+            return response()->json(['success' => false, 'erros' => ['Invoice does not exist']]);
         }
+
+        $validator = Validator::make($request->all(), [
+            'previous_reading_id' => 'required|exists:meter_readings,id',
+            'current_reading_id'  => 'required|exists:meter_readings,id',
+            'rate_per_unit'       => 'required',
+            'due_date'            => 'required',
+        ]);
+
+        // if validation fails, return with errors of validation
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'errors' => $validator->errors()]);
+        }
+
+        $previous_reading = MeterReading::find($request->previous_reading_id);
+        if (! $previous_reading) {
+            return response()->json(['success' => false, 'errors' => ['Failed to get previous reading']]);
+        }
+
+        $current_reading = MeterReading::find($request->current_reading_id);
+        if (! $current_reading) {
+            return response()->json(['success' => false, 'errors' => ['Failed to get current reading']]);
+        }
+
+        $invoice->previous_reading_id = $previous_reading->id;
+        $invoice->current_reading_id  = $current_reading->id;
+        $invoice->consumption         = $current_reading->reading - $previous_reading->reading;
+        $invoice->rate_per_unit       = $request->rate_per_unit;
+        $invoice->amount_due          = ($current_reading->reading - $previous_reading->reading) * $request->rate_per_unit;
+        $invoice->due_date            = $request->due_date;
+        $invoice->save();
     }
 
     public function arrears(string $id)
@@ -288,7 +282,32 @@ class InvoiceController extends Controller
      */
     public function destroy(string $id)
     {
-        //
+        //find id
+        $invoice = Invoice::find($id);
+        if ($invoice) {
+            $invoice->delete();
+
+            return response()->json(['success' => 'true']);
+        }
+
+        return response()->json(['success' => false, 'errors' => ['Invoice does not exists.']], 422);
+    }
+
+    public function bulkDestroy(Request $request)
+    {
+        // Validate ids
+        $validate = Validator::make($request->all(), [
+            'ids' => 'required | array',
+        ]);
+
+        if (! $validate->fails()) {
+            $invoices = Invoice::whereIn('id', $request->ids)->delete();
+
+            return response()->json(['success' => true]);
+            // return response()->json(['success' => false, 'errors' => ['Failed to retrieve Invoices. Does not exist']]);
+        } else {
+            return response()->json(['success' => false, 'errors' => $validate->errors()], 422);
+        }
     }
 
     private function generateInvoiceNumber(string $subscriber_id, string $meter_id, string $invoice_id)
