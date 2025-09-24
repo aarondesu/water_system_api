@@ -63,12 +63,14 @@ Route::group(['prefix' => 'v1'], function () {
         Route::get("/latest", [MeterReadingController::class, 'latest']);
         Route::get('/latest/meter', [MeterReadingController::class, 'latestReadingsMeter']);
         Route::post('/bulk', [MeterReadingController::class, 'bulkStore']);
+        Route::delete('/', [MeterReadingController::class, 'bulkdestroy']);
     });
     Route::apiResource('readings', MeterReadingController::class);
 
     // Invoices
     Route::group(['prefix' => 'invoices'], function () {
         Route::get("/arrears/{id}", [InvoiceController::class, 'arrears']);
+        Route::delete('/', [InvoiceController::class, 'bulkDestroy']);
     });
     Route::apiResource('invoices', InvoiceController::class);
 

@@ -16,9 +16,11 @@ class InvoiceController extends Controller
      */
     public function index(Request $request)
     {
-        $rows     = $request->get('rows') ?? 10;
-        $order    = $request->get('order') ?? "asc";
-        $invoices = Invoice::with('subscriber')
+        $rows  = $request->get('rows') ?? 10;
+        $order = $request->get('order') ?? "asc";
+
+        $invoices = Invoice::where(['isArchived' => false])
+            ->with('subscriber')
             ->with('formula', function ($builder) {
                 return $builder->select(['id', 'name']);
             })
@@ -285,7 +287,9 @@ class InvoiceController extends Controller
         //find id
         $invoice = Invoice::find($id);
         if ($invoice) {
-            $invoice->delete();
+            // $invoice->delete();
+            $invoice->isArchived = true;
+            $invoice->save();
 
             return response()->json(['success' => 'true']);
         }
@@ -301,7 +305,7 @@ class InvoiceController extends Controller
         ]);
 
         if (! $validate->fails()) {
-            $invoices = Invoice::whereIn('id', $request->ids)->delete();
+            $invoices = Invoice::whereIn('id', $request->ids)->update(['isArchived' => true]);
 
             return response()->json(['success' => true]);
             // return response()->json(['success' => false, 'errors' => ['Failed to retrieve Invoices. Does not exist']]);

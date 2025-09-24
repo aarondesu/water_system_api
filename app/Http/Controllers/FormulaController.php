@@ -13,7 +13,7 @@ class FormulaController extends Controller
      */
     public function index()
     {
-        $formulas = Formulas::with('variables')->with('columns')->get();
+        $formulas = Formulas::where(['isArchived' => false])->with('variables')->with('columns')->get();
 
         return response()->json(['success' => true, 'data' => $formulas]);
     }
@@ -34,6 +34,7 @@ class FormulaController extends Controller
             'columns'                 => 'required',
             'columns.*.header'        => 'required',
             'columns.*.value'         => 'required',
+            'columns.*.order'         => 'required',
         ]);
 
         if (! $validator->fails()) {
@@ -58,7 +59,9 @@ class FormulaController extends Controller
      */
     public function show(string $id)
     {
-        $formula = Formulas::with('variables')->with('columns')->find($id);
+        $formula = Formulas::with('variables')->with('columns', function ($query) {
+            $query->orderBy('order', 'asc');
+        })->find($id);
 
         if ($formula) {
             return response()->json(['success' => true, 'data' => $formula]);
@@ -110,7 +113,9 @@ class FormulaController extends Controller
                         if ($var) {
                             // Check if delete variable
                             if (isset($variable["delete"])) {
-                                $var->delete();
+                                if ($variable["delete"] === true) {
+                                    $var->delete();
+                                }
                             } else {
                                 $var->update($variable);
                             }
@@ -131,7 +136,10 @@ class FormulaController extends Controller
                         // Check if column exists
                         if ($col) {
                             if (isset($column["delete"])) {
-                                $col->delete();
+                                if ($column["delete"] === true) {
+                                    $col->delete();
+                                }
+
                             } else {
                                 $col->update($column);
                             }
@@ -161,8 +169,10 @@ class FormulaController extends Controller
     public function destroy(string $id)
     {
         $formula = Formulas::find($id);
-        if ($formula) {
-            $formula->delete();
+        if ($formula && ! $formula->isArchived) {
+            // $formula->delete();
+            $formula->isArchived = true;
+            $formula->save();
 
             return response()->json(['success' => true]);
         }
@@ -179,7 +189,7 @@ class FormulaController extends Controller
         if (! $validate->fails()) {
             $ids = $request->ids;
 
-            Formulas::whereIn('id', $ids)->delete();
+            Formulas::whereIn('id', $ids)->update(['isArchived' => true]);
 
             return response()->json(['success' => true]);
         } else {
